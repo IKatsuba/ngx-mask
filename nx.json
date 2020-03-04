@@ -1,0 +1,22 @@
+{
+  "npmScope": "ngx-mask",
+  "implicitDependencies": {
+    "angular.json": "*",
+    "package.json": {
+      "dependencies": "*",
+      "devDependencies": "*"
+    },
+    "tsconfig.json": "*",
+    "tslint.json": "*",
+    "nx.json": "*"
+  },
+  "projects": {
+    "sandbox": {
+      "tags": []
+    },
+    "sandbox-e2e": {
+      "tags": [],
+      "implicitDependencies": ["sandbox"]
+    }
+  }
+}
