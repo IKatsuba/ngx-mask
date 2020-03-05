@@ -23,6 +23,7 @@
     "lint": "nx workspace-lint && ng lint",
     "ng": "ng",
     "nx": "nx",
+    "release": "semantic-release",
     "start": "ng serve",
     "test": "ng test",
     "update": "ng update @nrwl/workspace",
