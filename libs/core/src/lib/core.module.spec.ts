@@ -1,7 +1,7 @@
 import { async, TestBed } from '@angular/core/testing';
 import { NgxMaskCoreModule } from './core.module';
 
-describe('CoreModule', () => {
+describe('NgxCoreModule', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [NgxMaskCoreModule]
