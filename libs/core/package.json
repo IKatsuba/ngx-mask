@@ -1,9 +1,31 @@
 {
   "name": "@ngx-mask/core",
   "version": "0.0.0-development.0",
+  "description": "[@ngx-mask/core](https://github.com/IKatsuba/ngx-mask#readme)",
+  "keywords": [
+    "ngx",
+    "ngx-mask",
+    "core",
+    "angular",
+    "mask"
+  ],
+  "homepage": "https://github.com/IKatsuba/ngx-mask#readme",
+  "bugs": {
+    "url": "https://github.com/IKatsuba/ngx-mask/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IKatsuba/ngx-mask.git"
+  },
+  "license": "MIT",
+  "author": "Igor Katsuba <katsuba.igor@gmail.com>",
   "peerDependencies": {
+    "@angular/cdk": "^9.0.0",
     "@angular/common": "^9.0.3",
     "@angular/core": "^9.0.3",
     "tslib": "^1.10.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

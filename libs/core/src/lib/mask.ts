@@ -23,18 +23,18 @@ export interface StringMaskOptions {
   tokens: MaskTokens;
 }
 
+export enum MaskPatterns {
+  number = '\\d'
+}
 
-export function insertChar(text: string, char: string, position: number) {
+function insertChar(text: string, char: string, position: number) {
   const t = text.split('');
   t.splice(position, 0, char);
   return t.join('');
 }
 
-export enum MaskPatterns {
-  number = '\\d'
-}
 
-export function calcOptionalNumbersToUse(pattern: string, value: string, tokens: MaskTokens) {
+function calcOptionalNumbersToUse(pattern: string, value: string, tokens: MaskTokens) {
   const numberToken = Object.keys(tokens).find(token => tokens[token].pattern === MaskPatterns.number);
   if (!numberToken) {
     return 0;
@@ -45,8 +45,7 @@ export function calcOptionalNumbersToUse(pattern: string, value: string, tokens:
   return numbersInValue - numbersInPattern;
 }
 
-
-export function isEscaped(pattern: string, pos: number, tokens: MaskTokens) {
+function isEscaped(pattern: string, pos: number, tokens: MaskTokens) {
   let count = 0;
   let i = pos - 1;
   let token: MaskToken = { escape: true };
@@ -59,7 +58,7 @@ export function isEscaped(pattern: string, pos: number, tokens: MaskTokens) {
 }
 
 
-export function concatChar(text: string, character: string, options: { reverse: boolean }, token: MaskToken) {
+function concatChar(text: string, character: string, options: { reverse: boolean }, token: MaskToken) {
   if (token && typeof token.transform === 'function') {
     character = token.transform(character);
   }
@@ -69,7 +68,7 @@ export function concatChar(text: string, character: string, options: { reverse: 
   return text + character;
 }
 
-export function hasMoreTokens(pattern: string, pos: number, inc: number, tokens: MaskTokens) {
+function hasMoreTokens(pattern: string, pos: number, inc: number, tokens: MaskTokens) {
   const pc = pattern.charAt(pos);
   const token = tokens[pc];
   if (pc === '') {
@@ -78,7 +77,7 @@ export function hasMoreTokens(pattern: string, pos: number, inc: number, tokens:
   return token && !token.escape ? true : hasMoreTokens(pattern, pos + inc, inc, tokens);
 }
 
-export function hasMoreRecursiveTokens(pattern: string, pos: number, inc: number, tokens: MaskTokens) {
+function hasMoreRecursiveTokens(pattern: string, pos: number, inc: number, tokens: MaskTokens) {
   const pc = pattern.charAt(pos);
   const token = tokens[pc];
   if (pc === '') {
