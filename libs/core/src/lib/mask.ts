@@ -43,19 +43,6 @@ function calcOptionalNumbersToUse(pattern: string, value: string, tokens: MaskTo
   return numbersInValue - numbersInPattern;
 }
 
-function isEscaped(pattern: string, pos: number, tokens: MaskTokens) {
-  let count = 0;
-  let i = pos - 1;
-  let token: MaskToken = { escape: true };
-  while (i >= 0 && token?.escape) {
-    token = tokens[pattern.charAt(i)];
-    count += token && token.escape ? 1 : 0;
-    i--;
-  }
-  return count > 0 && count % 2 === 1;
-}
-
-
 function concatChar(text: string, character: string, options: {}, token: MaskToken) {
   if (token && typeof token.transform === 'function') {
     character = token.transform(character);
@@ -103,7 +90,7 @@ export class Mask {
     }
     const { tokens } = this.options;
 
-    let pattern2 = this.pattern;
+    const pattern2 = this.pattern;
     let valid = true;
     let formatted = '';
     let valuePos = 0;
