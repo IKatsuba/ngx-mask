@@ -2,7 +2,6 @@ export interface MaskToken {
   pattern?: string | MaskPatterns,
   default?: string;
   optional?: boolean;
-  recursive?: boolean;
   escape?: boolean;
 
   transform?(c: string): string;
@@ -44,20 +43,7 @@ function calcOptionalNumbersToUse(pattern: string, value: string, tokens: MaskTo
   return numbersInValue - numbersInPattern;
 }
 
-function isEscaped(pattern: string, pos: number, tokens: MaskTokens) {
-  let count = 0;
-  let i = pos - 1;
-  let token: MaskToken = { escape: true };
-  while (i >= 0 && token?.escape) {
-    token = tokens[pattern.charAt(i)];
-    count += token && token.escape ? 1 : 0;
-    i--;
-  }
-  return count > 0 && count % 2 === 1;
-}
-
-
-function concatChar(text: string, character: string, options: { }, token: MaskToken) {
+function concatChar(text: string, character: string, options: {}, token: MaskToken) {
   if (token && typeof token.transform === 'function') {
     character = token.transform(character);
   }
@@ -72,17 +58,6 @@ function hasMoreTokens(pattern: string, pos: number, inc: number, tokens: MaskTo
     return false;
   }
   return token && !token.escape ? true : hasMoreTokens(pattern, pos + inc, inc, tokens);
-}
-
-function hasMoreRecursiveTokens(pattern: string, pos: number, inc: number, tokens: MaskTokens) {
-  const pc = pattern.charAt(pos);
-  const token = tokens[pc];
-  if (pc === '') {
-    return false;
-  }
-  return token && token.recursive
-    ? true
-    : hasMoreRecursiveTokens(pattern, pos + inc, inc, tokens);
 }
 
 
@@ -115,15 +90,13 @@ export class Mask {
     }
     const { tokens } = this.options;
 
-    let pattern2 = this.pattern;
+    const pattern2 = this.pattern;
     let valid = true;
     let formatted = '';
     let valuePos = 0;
     let patternPos = 0;
     let optionalNumbersToUse = calcOptionalNumbersToUse(pattern2, value, tokens);
     let escapeNext = false;
-    const recursive = [];
-    let inRecursiveMode = false;
 
     const steps = {
       start: 0,
@@ -132,34 +105,10 @@ export class Mask {
     };
 
 
-    function continueCondition(options) {
-      if (
-        !inRecursiveMode &&
-        !recursive.length &&
-        hasMoreTokens(pattern2, patternPos, steps.inc, tokens)
-      ) {
+    function continueCondition() {
+      if (hasMoreTokens(pattern2, patternPos, steps.inc, tokens)) {
         // continue in the normal iteration
         return true;
-      } else if (
-        !inRecursiveMode &&
-        recursive.length &&
-        hasMoreRecursiveTokens(pattern2, patternPos, steps.inc, tokens)
-      ) {
-        // continue looking for the recursive tokens
-        // Note: all chars in the patterns after the recursive portion will be handled as static string
-        return true;
-      } else if (!inRecursiveMode) {
-        // start to handle the recursive portion of the pattern
-        inRecursiveMode = recursive.length > 0;
-      }
-
-      if (inRecursiveMode) {
-        const pc = recursive.shift();
-        recursive.push(pc);
-        if (valuePos < value.length) {
-          pattern2 = insertChar(pattern2, pc, patternPos);
-          return true;
-        }
       }
 
       return patternPos < pattern2.length && patternPos >= 0;
@@ -174,49 +123,26 @@ export class Mask {
      */
     for (
       patternPos = steps.start;
-      continueCondition(this.options);
+      continueCondition();
     ) {
       // Value char
       const vc = value.charAt(valuePos);
       // Pattern char to match with the value char
       const pc = pattern2.charAt(patternPos);
 
-      let token = tokens[pc];
-      if (recursive.length && token && !token.recursive) {
-        // In the recursive portion of the pattern: tokens not recursive must be seen as static chars
-        token = null;
-      }
+      const token = tokens[pc];
 
       // 1. Handle escape tokens in pattern
       // go to next iteration: if the pattern char is a escape char or was escaped
-      if (!inRecursiveMode || vc) {
-        if (escapeNext) {
-          // pattern char is escaped, just add it and move on
-          formatted = concatChar(formatted, pc, this.options, token);
-          escapeNext = false;
-          patternPos = patternPos + steps.inc;
-          continue;
-        } else if (token && token.escape) {
-          // mark to escape the next pattern char
-          escapeNext = true;
-          patternPos = patternPos + steps.inc;
-          continue;
-        }
-      }
-
-      // 2. Handle recursive tokens in pattern
-      // go to next iteration: if the value str is finished or
-      //                       if there is a normal token in the recursive portion of the pattern
-      if (!inRecursiveMode && token && token.recursive) {
-        // save it to repeat in the end of the pattern and handle the value char now
-        recursive.push(pc);
-      } else if (inRecursiveMode && !vc) {
-        // in recursive mode but value is finished. Add the pattern char if it is not a recursive token
+      if (escapeNext) {
+        // pattern char is escaped, just add it and move on
         formatted = concatChar(formatted, pc, this.options, token);
+        escapeNext = false;
         patternPos = patternPos + steps.inc;
         continue;
-      } else if (!inRecursiveMode && recursive.length > 0 && !vc) {
-        // recursiveMode not started but already in the recursive portion of the pattern
+      } else if (token && token.escape) {
+        // mark to escape the next pattern char
+        escapeNext = true;
         patternPos = patternPos + steps.inc;
         continue;
       }
@@ -231,10 +157,6 @@ export class Mask {
           valuePos += steps.inc;
         }
 
-        if (!inRecursiveMode && recursive.length) {
-          // save it to repeat in the end of the pattern
-          recursive.push(pc);
-        }
       } else if (token.optional) {
         // if token is optional, only add the value char if it matchs the token pattern
         //                       if not, move on to the next pattern char
@@ -242,9 +164,6 @@ export class Mask {
           formatted = concatChar(formatted, vc, this.options, token);
           valuePos += steps.inc;
           optionalNumbersToUse--;
-        } else if (recursive.length > 0 && vc) {
-          valid = false;
-          break;
         }
       } else if (new RegExp(token.pattern).test(vc)) {
         // if token isn't optional the value char must match the token pattern

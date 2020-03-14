@@ -8,7 +8,6 @@ export const NGX_MASK_OPTIONS = new InjectionToken<Partial<StringMaskOptions>>('
       tokens: {
         '0': { pattern: MaskPatterns.number, default: '0' },
         '9': { pattern: MaskPatterns.number, optional: true },
-        '#': { pattern: MaskPatterns.number, optional: true, recursive: true },
         'A': { pattern: '[a-zA-Z0-9]' },
         'S': { pattern: '[a-zA-Z]' },
         'U': {
