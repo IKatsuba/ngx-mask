@@ -18,7 +18,6 @@ export interface MaskProcessResult {
 }
 
 export interface StringMaskOptions {
-  reverse: boolean;
   useDefaults: boolean;
   tokens: MaskTokens;
 }
@@ -58,13 +57,11 @@ function isEscaped(pattern: string, pos: number, tokens: MaskTokens) {
 }
 
 
-function concatChar(text: string, character: string, options: { reverse: boolean }, token: MaskToken) {
+function concatChar(text: string, character: string, options: { }, token: MaskToken) {
   if (token && typeof token.transform === 'function') {
     character = token.transform(character);
   }
-  if (options.reverse) {
-    return character + text;
-  }
+
   return text + character;
 }
 
@@ -95,8 +92,7 @@ export class Mask {
   constructor(private pattern: string, options?: Partial<StringMaskOptions> & { tokens: MaskTokens }) {
 
     this.options = {
-      reverse: options?.reverse ?? false,
-      useDefaults: options?.useDefaults ?? options?.reverse,
+      useDefaults: options?.useDefaults ?? false,
       tokens: options.tokens
     };
   }
@@ -122,7 +118,7 @@ export class Mask {
     let pattern2 = this.pattern;
     let valid = true;
     let formatted = '';
-    let valuePos = this.options.reverse ? value.length - 1 : 0;
+    let valuePos = 0;
     let patternPos = 0;
     let optionalNumbersToUse = calcOptionalNumbersToUse(pattern2, value, tokens);
     let escapeNext = false;
@@ -130,9 +126,9 @@ export class Mask {
     let inRecursiveMode = false;
 
     const steps = {
-      start: this.options.reverse ? pattern2.length - 1 : 0,
-      end: this.options.reverse ? -1 : pattern2.length,
-      inc: this.options.reverse ? -1 : 1
+      start: 0,
+      end: pattern2.length,
+      inc: 1
     };
 
 
@@ -160,11 +156,7 @@ export class Mask {
       if (inRecursiveMode) {
         const pc = recursive.shift();
         recursive.push(pc);
-        if (options.reverse && valuePos >= 0) {
-          patternPos++;
-          pattern2 = insertChar(pattern2, pc, patternPos);
-          return true;
-        } else if (!options.reverse && valuePos < value.length) {
+        if (valuePos < value.length) {
           pattern2 = insertChar(pattern2, pc, patternPos);
           return true;
         }
@@ -198,20 +190,13 @@ export class Mask {
       // 1. Handle escape tokens in pattern
       // go to next iteration: if the pattern char is a escape char or was escaped
       if (!inRecursiveMode || vc) {
-        if (this.options.reverse && isEscaped(pattern2, patternPos, this.options.tokens)) {
-          // pattern char is escaped, just add it and move on
-          formatted = concatChar(formatted, pc, this.options, token);
-          // skip escape token
-          patternPos = patternPos + steps.inc;
-          patternPos = patternPos + steps.inc;
-          continue;
-        } else if (!this.options.reverse && escapeNext) {
+        if (escapeNext) {
           // pattern char is escaped, just add it and move on
           formatted = concatChar(formatted, pc, this.options, token);
           escapeNext = false;
           patternPos = patternPos + steps.inc;
           continue;
-        } else if (!this.options.reverse && token && token.escape) {
+        } else if (token && token.escape) {
           // mark to escape the next pattern char
           escapeNext = true;
           patternPos = patternPos + steps.inc;
